@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>City, District, and Ward Selection</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+</head>
+<body>
+    <form id="address-form">
+        <select id="city-select" name="city">
+            <option value="">Chọn thành phố</option>
+        </select>
+        <select id="district-select" name="district">
+            <option value="">Quận/Huyện</option>
+        </select>
+        <select id="ward-select" name="ward">
+            <option value="">Phường/Xã</option>
+        </select>
+        <input type="text" id="address-input" name="address" placeholder="Nhập địa chỉ cụ thể">
+        <button type="button" id="save-address">Lưu địa chỉ</button>
+    </form>
+
+    <div id="result"></div>
+
+    <form id="search-form">
+        <input type="text" id="search-input" name="search" placeholder="Nhập từ khóa tìm kiếm">
+        <button type="button" id="search-button">Tìm kiếm</button>
+    </form>
+
+    <div id="search-result"></div>
+
+    <script>
+        $(document).ready(function(){
+            // Load cities when page loads
+            $.get('/cities', function(data){
+                data.forEach(function(city){
+                    $('#city-select').append('<option value="' + city[0] + '">' + city[0] + '</option>');
+                });
+            });
+
+            // Handle city selection
+            $('#city-select').change(function(){
+                var selectedCity = $(this).val();
+                $('#district-select').empty().append('<option value="">Quận/Huyện</option>');
+                $('#ward-select').empty().append('<option value="">Phường/Xã</option>');
+
+                if(selectedCity !== ''){
+                    $.get('/districts/' + selectedCity, function(data){
+                        data.forEach(function(district){
+                            $('#district-select').append('<option value="' + district[0] + '">' + district[0] + '</option>');
+                        });
+                    });
+                }
+            });
+
+            // Handle district selection
+            $('#district-select').change(function(){
+                var selectedDistrict = $(this).val();
+                $('#ward-select').empty().append('<option value="">Phường/Xã</option>');
+
+                if(selectedDistrict !== ''){
+                    $.get('/wards/' + selectedDistrict, function(data){
+                        data.forEach(function(ward){
+                            $('#ward-select').append('<option value="' + ward[0] + '">' + ward[0] + '</option>');
+                        });
+                    });
+                }
+            });
+
+            // Handle form submission
+            $('#save-address').click(function(){
+                var formData = {
+                    city: $('#city-select').val(),
+                    district: $('#district-select').val(),
+                    ward: $('#ward-select').val(),
+                    address: $('#address-input').val()
+                };
+
+                $.post('/save_address', formData, function(data){
+                    $('#result').text('Mã địa danh của bạn là: ' + data);
+                });
+            });
+
+            // Function to display search results
+            function displaySearchResults(results) {
+                $('#search-result').empty(); // Clear previous results
+
+                results.forEach(function(result){
+                    $('#search-result').append('<div>' + result + '</div>'); // Append each result in a new div
+                });
+            }
+
+            // Handle search submission
+            $('#search-button').click(function(){
+                var searchValue = $('#search-input').val();
+                $.post('/search', { search: searchValue }, function(result){
+                    displaySearchResults(result); // Call the function to display search results
+                });
+            });
+        });
+    </script>
+</body>
+</html>
